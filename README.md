@@ -1,6 +1,6 @@
 # Pinguin Radio Proxy
 
-A small Flask service that proxies the Pinguin Radio audio stream and exposes now-playing metadata and album artwork. It is designed to run in a container on a Raspberry Pi, including clusters managed with k3s.
+A small Flask service that proxies the Pinguin Radio audio stream and exposes now-playing metadata and album artwork. It runs in a container and can be deployed to a Kubernetes cluster, including k3s.
 
 ## Features
 
@@ -20,79 +20,79 @@ A small Flask service that proxies the Pinguin Radio audio stream and exposes no
 | `/cover.jpg` | Current album art, when available |
 | `/` | Simple status page |
 
-With the included MetalLB Service, the app is exposed on port `80` at the configured LoadBalancer IP. For example: `http://192.168.2.231/metadata` and `http://192.168.2.231/radio`. The IP and address pool are set in [`k8s/svc.yaml`](k8s/svc.yaml).
+With the included MetalLB Service, the app is exposed on port `80` at the configured LoadBalancer IP. For example: `http://<load-balancer-ip>/metadata` and `http://<load-balancer-ip>/radio`. The address pool and optional requested IP are set in [`k8s/svc.yaml`](k8s/svc.yaml).
 
 ## Configuration
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `TRACK_METADATA_DELAY_SECONDS` | `10` | Seconds to wait before publishing a detected track change. Use `0` for no delay. |
-| `PUBLIC_BASE_URL` | Automatically detected | Optional public base URL used when generating cover-art links, for example `http://192.168.2.231`. |
+| `PUBLIC_BASE_URL` | Automatically detected | Optional public base URL used when generating cover-art links, for example `http://<load-balancer-ip>`. |
 
 The delay is configured in [`k8s/deployment.yaml`](k8s/deployment.yaml).
 
-## Build for Raspberry Pi
+## Build the container image
 
-Run these commands from the project directory on a machine with Docker Buildx. For a 64-bit Raspberry Pi OS, build an ARM64 image:
+Run these commands from the project directory on a machine with Docker Buildx. Build for the architecture used by the Kubernetes cluster nodes. For ARM64 nodes:
 
 ```sh
 docker buildx build --platform linux/arm64 --load -t pinguin-radio-proxy:latest .
 docker save pinguin-radio-proxy:latest -o pinguin-radio-proxy.tar
 ```
 
-For a 32-bit Raspberry Pi OS, replace `linux/arm64` with `linux/arm/v7`.
+For AMD64 nodes, replace `linux/arm64` with `linux/amd64`. For 32-bit ARM nodes, use `linux/arm/v7`.
 
-Copy the image archive to the Pi. Replace the example SSH target with your Pi's username and hostname or IP:
+Copy the image archive to a machine that can access the Kubernetes cluster. Replace the example SSH target with the appropriate account and host:
 
 ```sh
-scp pinguin-radio-proxy.tar pi@raspberrypi.local:~/
+scp pinguin-radio-proxy.tar <user>@<cluster-host>:~/
 ```
 
-## Deploy with k3s
+## Deploy to a k3s cluster
 
-SSH into the Pi and import the image into k3s's containerd image store:
+If the cluster uses k3s, import the image into containerd on the node that will run the workload:
 
 ```sh
-ssh pi@raspberrypi.local
+ssh <user>@<cluster-node>
 sudo k3s ctr --namespace k8s.io images import ~/pinguin-radio-proxy.tar
 ```
 
-Apply the Deployment and MetalLB Service manifests from this repository. If the repository is not on the Pi, copy the `k8s/` directory there first.
+Apply the Deployment and MetalLB Service manifests from this repository using `kubectl` configured for your cluster:
 
 ```sh
-sudo k3s kubectl apply -f k8s/deployment.yaml
-sudo k3s kubectl apply -f k8s/svc.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/svc.yaml
 ```
 
 Check the rollout and allocated external IP:
 
 ```sh
-sudo k3s kubectl rollout status deployment/pinguin-radio-proxy
-sudo k3s kubectl get service pinguin-radio-proxy
+kubectl rollout status deployment/pinguin-radio-proxy
+kubectl get service pinguin-radio-proxy
 ```
 
-The Service uses the MetalLB pool named `doc-example` and requests `192.168.2.231` in [`k8s/svc.yaml`](k8s/svc.yaml). Change those values to match your network if needed. Once the address is assigned, use `http://<load-balancer-ip>/radio` as the stream URL. The other endpoints are available at the same address, such as `http://<load-balancer-ip>/api/nowplaying`.
+The Service uses the MetalLB pool named `doc-example`. Set the pool name and, optionally, a requested IP in [`k8s/svc.yaml`](k8s/svc.yaml) to match your cluster. Once MetalLB assigns an address, use `http://<load-balancer-ip>/radio` as the stream URL. Other endpoints are available at the same address, such as `http://<load-balancer-ip>/api/nowplaying`.
 
 ## Update the deployment
 
-After changing the app, build and save the image again, then copy it to the Pi:
+After changing the app, build and save the image again, then copy it to a cluster node:
 
 ```sh
 docker buildx build --platform linux/arm64 --load -t pinguin-radio-proxy:latest .
 docker save pinguin-radio-proxy:latest -o pinguin-radio-proxy.tar
-scp pinguin-radio-proxy.tar pi@raspberrypi.local:~/
+scp pinguin-radio-proxy.tar <user>@<cluster-node>:~/
 ```
 
-On the Pi, import the replacement image and restart the Deployment:
+On the node, import the replacement image and restart the Deployment:
 
 ```sh
-sudo k3s ctr --namespace k8s.io images import ~/pinguin-radio-proxy.tar
-sudo k3s kubectl rollout restart deployment/pinguin-radio-proxy
-sudo k3s kubectl rollout status deployment/pinguin-radio-proxy
+k3s ctr --namespace k8s.io images import ~/pinguin-radio-proxy.tar
+kubectl rollout restart deployment/pinguin-radio-proxy
+kubectl rollout status deployment/pinguin-radio-proxy
 ```
 
 The Deployment uses `imagePullPolicy: Never`, so k3s uses the image imported locally. View application logs with:
 
 ```sh
-sudo k3s kubectl logs deployment/pinguin-radio-proxy
+kubectl logs deployment/pinguin-radio-proxy
 ```
