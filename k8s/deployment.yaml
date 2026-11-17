@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinguin-radio-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pinguin-radio-proxy
+  template:
+    metadata:
+      labels:
+        app: pinguin-radio-proxy
+    spec:
+      containers:
+        - name: pinguin-radio-proxy
+          image: pinguin-radio-proxy:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 5002
+          env:
+            - name: TRACK_METADATA_DELAY_SECONDS
+              value: "10"
+          resources:
+            requests: 
+              memory: 256Mi
+              cpu: 200m
+            limits: 
+              memory: 512Mi
+              cpu: 400m
+              
