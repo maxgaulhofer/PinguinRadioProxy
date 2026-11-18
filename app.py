@@ -597,8 +597,13 @@ def radio():
 
     except requests.RequestException as error:
 
+        app.logger.warning(
+            "Kan Pinguin Radio niet bereiken",
+            exc_info=error
+        )
+
         return (
-            f"Kan Pinguin Radio niet bereiken: {error}",
+            "Kan Pinguin Radio momenteel niet bereiken.",
             502
         )
 
