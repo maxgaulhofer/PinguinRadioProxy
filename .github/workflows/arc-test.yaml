@@ -1,0 +1,21 @@
+
+name: ARC Runner Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: k3s-org-runner
+
+    steps:
+      - name: Check runner
+        run: |
+          echo "Hello from k3s ARC!"
+          hostname
+          uname -a
+
+      - name: Check Docker
+        run: |
+          docker version
+          docker info
