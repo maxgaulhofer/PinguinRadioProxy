@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, k3s-org-runner]
+    runs-on: k3s-org-runner
 
     steps:
       - name: Check out repository
