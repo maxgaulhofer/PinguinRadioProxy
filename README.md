@@ -46,7 +46,7 @@ The **Build and publish container image** workflow builds and publishes the ARM6
 
 ## Deploy from GitHub Actions
 
-The **Deploy to k3s** workflow deploys an image tag to the cluster. It runs on the self-hosted runner labeled `k3s-org-runner` and expects that runner to have `kubectl` installed and configured to access the target cluster.
+The **Deploy to k3s** workflow deploys an image tag to the cluster. It runs on the self-hosted runner labeled `k3s-org-runner` and installs the latest stable `kubectl` when it starts. The runner must have a kubeconfig or context configured to access the target cluster.
 
 In the repository's **Actions** tab, select **Deploy to k3s**, choose **Run workflow**, and enter the GHCR image tag to deploy (for example, `latest` or a `sha-...` tag). The workflow applies the manifests in `k8s/` and waits for the Deployment rollout.
 
