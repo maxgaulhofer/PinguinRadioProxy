@@ -42,6 +42,16 @@ docker save pinguin-radio-proxy:latest -o pinguin-radio-proxy.tar
 
 For AMD64 nodes, replace `linux/arm64` with `linux/amd64`. For 32-bit ARM nodes, use `linux/arm/v7`.
 
+The **Build and publish container image** workflow builds and publishes the ARM64 image to GitHub Container Registry (GHCR). Start it from the **Actions** tab using **Run workflow**. It publishes `latest` when run from the repository's default branch, along with a branch tag and a `sha-...` tag.
+
+## Deploy from GitHub Actions
+
+The **Deploy to k3s** workflow deploys an image tag to the cluster. It runs on the self-hosted runner labeled `k3s-org-runner` and expects that runner to have `kubectl` installed and configured to access the target cluster.
+
+In the repository's **Actions** tab, select **Deploy to k3s**, choose **Run workflow**, and enter the GHCR image tag to deploy (for example, `latest` or a `sha-...` tag). The workflow applies the manifests in `k8s/` and waits for the Deployment rollout.
+
+The cluster must be able to pull the image from GHCR. Make the GHCR package public, or configure an image pull secret in the cluster if the package is private.
+
 Copy the image archive to a machine that can access the Kubernetes cluster. Replace the example SSH target with the appropriate account and host:
 
 ```sh

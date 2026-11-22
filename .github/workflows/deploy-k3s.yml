@@ -1,0 +1,43 @@
+name: Deploy to k3s
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: GHCR image tag to deploy
+        required: true
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-k3s
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, k3s-org-runner]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Apply manifests and deploy image
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          image="ghcr.io/${REPOSITORY,,}:${IMAGE_TAG}"
+          deployment_manifest="$RUNNER_TEMP/pinguin-radio-proxy-deployment.yaml"
+
+          sed \
+            -e "s|^[[:space:]]*image:.*|          image: ${image}|" \
+            -e 's|imagePullPolicy: Never|imagePullPolicy: Always|' \
+            k8s/deployment.yaml > "$deployment_manifest"
+
+          kubectl apply -f "$deployment_manifest" -f k8s/svc.yaml
+          kubectl rollout status deployment/pinguin-radio-proxy --timeout=180s
