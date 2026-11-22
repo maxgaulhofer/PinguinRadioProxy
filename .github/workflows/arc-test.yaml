@@ -4,6 +4,9 @@ name: ARC Runner Test
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: k3s-org-runner
