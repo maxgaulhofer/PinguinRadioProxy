@@ -44,5 +44,6 @@ jobs:
             -e 's|imagePullPolicy: Never|imagePullPolicy: Always|' \
             k8s/deployment.yaml > "$deployment_manifest"
 
+          kubectl apply -f k8s/namespace.yaml
           kubectl apply -f "$deployment_manifest" -f k8s/svc.yaml
-          kubectl rollout status deployment/pinguin-radio-proxy --timeout=180s
+          kubectl rollout status --namespace apps deployment/pinguin-radio-proxy --timeout=180s

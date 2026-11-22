@@ -70,6 +70,7 @@ sudo k3s ctr --namespace k8s.io images import ~/pinguin-radio-proxy.tar
 Apply the Deployment and MetalLB Service manifests from this repository using `kubectl` configured for your cluster:
 
 ```sh
+kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/svc.yaml
 ```
@@ -77,8 +78,8 @@ kubectl apply -f k8s/svc.yaml
 Check the rollout and allocated external IP:
 
 ```sh
-kubectl rollout status deployment/pinguin-radio-proxy
-kubectl get service pinguin-radio-proxy
+kubectl rollout status --namespace apps deployment/pinguin-radio-proxy
+kubectl get service --namespace apps pinguin-radio-proxy
 ```
 
 The Service uses the MetalLB pool named `doc-example`. Set the pool name and, optionally, a requested IP in [`k8s/svc.yaml`](k8s/svc.yaml) to match your cluster. Once MetalLB assigns an address, use `http://<load-balancer-ip>/radio` as the stream URL. Other endpoints are available at the same address, such as `http://<load-balancer-ip>/api/nowplaying`.
