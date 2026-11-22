@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pinguin-radio-proxy
-spec:
+  namespace: apps
   replicas: 1
   selector:
     matchLabels:
